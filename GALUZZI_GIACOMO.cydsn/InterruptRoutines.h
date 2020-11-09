@@ -8,8 +8,7 @@
 #ifndef Interrupt_Routines_H
     #define Interrupt_Routines_H
     
-    #include "cytypes.h"
-    #include "project.h"
+    #include "Global.h"
     
     CY_ISR_PROTO(PUSH_BUTTON_ISR);
     
