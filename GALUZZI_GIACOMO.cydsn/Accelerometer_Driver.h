@@ -1,13 +1,26 @@
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
-*/
+/* ======================================== */
+/* ======== ACCELEROMETER DRIVER H ======== */
+/* ======================================== */
+
+#ifndef Accelerometer_Driver_H
+    #define Accelerometer_Driver_H
+
+    #include "Global.h"
+    
+    // Initialisation function
+    void InitAll();
+    
+    // Accelerometer configuration
+    void LIS3DH_Start();
+    
+    // Record frequency in EEPROM
+    void UpdateMemory ();
+    
+    // Frequency option
+    void FreqOption();
+    
+    
+    
+#endif    
 
 /* [] END OF FILE */

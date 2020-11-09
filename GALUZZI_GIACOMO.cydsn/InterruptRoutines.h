@@ -10,6 +10,9 @@
     
     #include "Global.h"
     
+    _Bool   ButtonPressed;              // Flag for the button IF pressed
+    uint8_t ButtonCounter = 0b0001;     // Counter to change frequency
+    
     CY_ISR_PROTO(PUSH_BUTTON_ISR);
     
 #endif
