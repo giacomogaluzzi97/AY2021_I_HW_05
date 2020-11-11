@@ -6,7 +6,13 @@
 #include "I2C_Interface.h"
 #include "InterruptRoutines.h"
 
-uint8_t CurrentFreq = LIS3DH_CTRL_REG1_INIT;    // The first frequency is 1 Hz
+
+// Variables for register configuration
+uint8_t CurrentFreq = (LIS3DH_CTRL_REG1_INIT | 0b00010000);    // The first frequency is 1 Hz
+
+// Variables for data buffer
+uint8_t DataBuffer[BUFFER_SIZE];
+    
 
 
 /*------------------------------------------------------------------------------------------*/
@@ -21,17 +27,17 @@ void InitAll()
     isr_ChangeFreq_StartEx(PUSH_BUTTON_ISR);     // ISR              Start
     CurrentFreq=EEPROM_ReadByte(EEPROM_ADDRESS); // Working freq     Init from EEPROM
     ButtonCounter=(CurrentFreq)>>4;              // Button counter   Init from EEPROM (ODR)                         
-    LIS3DH_Start();                              // Accelerometer    Start    
-}    
+    LIS3DH_InitRegister();                       // Accelerometer    Init registers    
+}   
 /*------------------------------------------------------------------------------------------*/
 // Accelerometer configuration
 
-void LIS3DH_Start()
+void LIS3DH_InitRegister()
 {
     // Initialisation of CTRL_REG1
     ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
                                                    LIS3DH_CTRL_REG1_ADDRESS,
-                                                   LIS3DH_CTRL_REG1_INIT);
+                                                   CurrentFreq);
     
     if(error == ERROR) UART_Debug_PutString("Error in LIS3DH configuration\r\n");
     
@@ -49,8 +55,15 @@ void LIS3DH_Start()
 void UpdateMemory()
 {
     CurrentFreq = ((ButtonCounter)<<4 | LIS3DH_CTRL_REG1_INIT);
+    
     EEPROM_UpdateTemperature();
     EEPROM_WriteByte(CurrentFreq, EEPROM_ADDRESS);
+    
+    ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                                   LIS3DH_CTRL_REG1_ADDRESS,
+                                                   CurrentFreq);
+    
+    if(error == ERROR) UART_Debug_PutString("Error in update memory\r\n");
 }    
 /*------------------------------------------------------------------------------------------*/
 // Frequency option
@@ -100,8 +113,45 @@ void FreqOption()
             }
         }
     }
-}                    
+}
 /*------------------------------------------------------------------------------------------*/
+// Data collection from LIS3DH
+
+XYZ_RawData DataFromAccelerometer()
+{
+    uint8_t MultiReadData[NUMBER_OF_DATA_REG];      // Vector for multi read
+    XYZ_RawData raw_data;                           // Structure for data casting
+    
+    ErrorCode error = I2C_Peripheral_ReadRegisterMulti(LIS3DH_DEVICE_ADDRESS,
+                                                       LIS3DH_OUT_X_L,
+                                                       NUMBER_OF_DATA_REG,
+                                                       MultiReadData);
+    
+    if(error == ERROR) UART_Debug_PutString("Error data acquisition\r\n");
+    
+    raw_data.X = (int16)((MultiReadData[1])<<8 | MultiReadData[0])>>4; 
+    raw_data.Y = (int16)((MultiReadData[3])<<8 | MultiReadData[2])>>4;
+    raw_data.Z = (int16)((MultiReadData[5])<<8 | MultiReadData[4])>>4;
+    
+    return(raw_data);
+}    
+/*------------------------------------------------------------------------------------------*/
+// Data preparation from raw data
+
+XYZ_ConvData DataConversion(XYZ_RawData raw_data)
+{   
+    XYZ_ConvData conv_data;
+    
+    conv_data.X = (float32)(raw_data.X*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+    conv_data.Y = (float32)(raw_data.Y*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+    conv_data.Z = (float32)(raw_data.Z*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+}    
+
+
+
+
+
+
 
 
 /* [] END OF FILE */

@@ -9,7 +9,11 @@
     #include "project.h"
     #include "stdio.h"
     #include "UART_Debug.h"
+    #include "ErrorCodes.h"
     
+    /*------------------------------------------------------------------------------------------*/
+    /* DEFINE */
+    /*------------------------------------------------------------------------------------------*/
     
     // Accelerometer register adresses
     #define LIS3DH_WHO_AM_I_REG_ADDRESS     0x0F        // Address of the WHO AM I register
@@ -29,7 +33,7 @@
     #define NUMBER_OF_DATA_REG              6           // Useful for multi read
     
     // Accelerometer register init
-    #define LIS3DH_CTRL_REG1_INIT           0x17        // X,Y,Z-axis enable
+    #define LIS3DH_CTRL_REG1_INIT           0x07        // X,Y,Z-axis enable
     #define LIS3DH_CTRL_REG4_INIT           0x18        // FS = +-4g, HR mode
     
     // Accelerometer working info
@@ -37,6 +41,7 @@
     #define GRAVITY                         9.81        // Gravity acc      --> unit: m/(s^2)
     #define LIS3DH_FS                       8*GRAVITY   // from -4g to +4g  --> unit: g
     #define LIS3DH_HIGH_RESOLUTION          12          // 12 bit data output
+    #define MG_TO_G                         0.001       // Sensitivity factor (from mg/digit to g/digit)
     
     // Accelerometer status reg mask
     #define LIS3DH_STATUS_REG_NEW_DATA_SET  0x08        // New set of data for X,Y,Z-axis
@@ -50,12 +55,34 @@
     #define TAIL                            0xC0
     #define BUFFER_SIZE                     1+LIS3DH_HIGH_RESOLUTION+1
     
+    /*------------------------------------------------------------------------------------------*/
+    /* VARIABLES */
+    /*------------------------------------------------------------------------------------------*/
     
-    
-    
-    // Variables
+    // Variables for register configuration
     extern _Bool        ButtonPressed;                  // Flag for the interrupt
     extern uint8_t      CurrentFreq;                    // Working frequency of accelerometer
+    extern uint8_t      DataBuffer;                     // Data Buffer for send the data
+    
+    // Variables for data acquisition
+    typedef struct {
+        int16_t X;
+        int16_t Y;
+        int16_t Z;
+    } XYZ_RawData;                                      // Typedef for each axis of Raw Data
+    extern XYZ_RawData raw_data;                        // Structure used in Accelerometer_Driver.c
+    
+    typedef struct {
+        float32 X;
+        float32 Y;
+        float32 Z;
+    } XYZ_ConvData;                                     // Typedef for each axis of Converted Data
+    extern XYZ_ConvData conv_data;                      // Structure used in Accelerometer_Driver.c
+    
+    
+    // Variables for data buffer
+    extern uint8_t DataBuffer[BUFFER_SIZE];
+    
     
     
 #endif

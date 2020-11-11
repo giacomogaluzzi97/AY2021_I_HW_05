@@ -1,25 +1,25 @@
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
-*/
-#include "project.h"
+/* ======================================== */
+/* ================ MAIN H ================ */
+/* ======================================== */
+
+#include "Global.h"
+#include "I2C_Interface.h"
+#include "InterruptRoutines.h"
+#include "Accelerometer_Driver.h"
+
 
 int main(void)
 {
-    CyGlobalIntEnable; /* Enable global interrupts. */
+    CyGlobalIntEnable;      // Enable global interrupts
+    InitAll();              // Initialization of UART, EEPROM, I2C PERIPH., ISR and LIS3DH
 
-    /* Place your initialization/startup code here (e.g. MyInst_Start()) */
-
+    // DataBuffer
+    DataBuffer[0]               = HEADER;
+    DataBuffer[BUFFER_SIZE-1]   = TAIL;
+    
     for(;;)
     {
-        /* Place your application code here. */
+        
     }
 }
 
