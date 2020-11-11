@@ -5,113 +5,140 @@
 #include "Accelerometer_Driver.h"
 #include "I2C_Interface.h"
 #include "InterruptRoutines.h"
+#include "UART_Debug.h"
 
 
 // Variables for register configuration
-uint8_t CurrentFreq = (LIS3DH_CTRL_REG1_INIT | 0b00010000);    // The first frequency is 1 Hz
+uint8_t CurrentFreq;                                    // Sampling frequency variable
 
+// Variable to use if debugging with UART
+    //char message[50] = {'\0'};                        // Message for debugging purpose
+    //uint8_t isConnected;                              // Variable to check if the device is connected 
 
 /*------------------------------------------------------------------------------------------*/
-// Initialisation function
+// Initialisation function 
+// [PASS 1 in main.c]
 
 void InitAll()
 {
-    UART_Debug_Start();                          // UART             Start
-    EEPROM_Start();                              // EEPROM           Start
-    I2C_Peripheral_Start();                      // I2C Peripheral   Start
-    ButtonPressed=0;                             // Button flag      Init = 0
-    isr_ChangeFreq_StartEx(PUSH_BUTTON_ISR);     // ISR              Start
-    CurrentFreq=EEPROM_ReadByte(EEPROM_ADDRESS); // Working freq     Init from EEPROM
-    ButtonCounter=(CurrentFreq)>>4;              // Button counter   Init from EEPROM (ODR)                         
-    LIS3DH_InitRegister();                       // Accelerometer    Init registers    
+    UART_Debug_Start();                                 // UART             Start
+    EEPROM_Start();                                     // EEPROM           Start
+    I2C_Peripheral_Start();                             // I2C Peripheral   Start
+    ButtonPressed=0;                                    // Button flag      Init = 0
+    isr_ChangeFreq_StartEx(PUSH_BUTTON_ISR);            // ISR              Start
+    CurrentFreq=EEPROM_ReadByte(EEPROM_ADDRESS);        // Sampling freq    Init from EEPROM
+    if(CurrentFreq>6 || CurrentFreq<1) CurrentFreq = 1; // Sampling freq    Check if there are no values allowed in EEPROM
+    LIS3DH_InitRegister();    // [*]                    // Accelerometer    Init registers    
 }   
 /*------------------------------------------------------------------------------------------*/
 // Accelerometer configuration
+// [*]
 
 void LIS3DH_InitRegister()
 {
+    // Brief code to check if the device is connected
+        // isConnected = I2C_Peripheral_IsDeviceConnected(LIS3DH_DEVICE_ADDRESS);
+        // sprintf(message, "is the device connected? %d -> connected = 1, unconnected = 0.\r\n", isConnected);
+        // UART_Debug_PutString(message);
+    
     // Initialisation of CTRL_REG1
     ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
                                                    LIS3DH_CTRL_REG1_ADDRESS,
-                                                   CurrentFreq);
+                                                   LIS3DH_CTRL_REG1_INIT | (CurrentFreq<<4) );
     
-    if(error == ERROR) UART_Debug_PutString("Error in LIS3DH configuration\r\n");
+    if(error == ERROR) UART_Debug_PutString("Error in LIS3DH CTRL REG 1 configuration\r\n");
     
     // Initialisation of CTRL_REG4
     error = I2C_Peripheral_WriteRegister          (LIS3DH_DEVICE_ADDRESS,
                                                    LIS3DH_CTRL_REG4_ADDRESS,
                                                    LIS3DH_CTRL_REG4_INIT);
     
-    if(error == ERROR) UART_Debug_PutString("Error in LIS3DH configuration\r\n");
+    if(error == ERROR) UART_Debug_PutString("Error in LIS3DH CTRL REG 4 configuration\r\n");
     
-}    
+}   
 /*------------------------------------------------------------------------------------------*/
-// Record frequency in EEPROM
-                
-void UpdateMemory()
-{
-    CurrentFreq = ((ButtonCounter)<<4 | LIS3DH_CTRL_REG1_INIT);
+// Microcontroller functions (memory management, freq change, data acquisition and preparation)
+// [PASS 2 in main.c, inside for(;;)]
+
+void MicroManager()
+{   
+    // Frequency control
+    FreqOption();                         //[see code below]
     
-    EEPROM_UpdateTemperature();
-    EEPROM_WriteByte(CurrentFreq, EEPROM_ADDRESS);
+    // Status Register reading
+    uint8_t Status_Reg;   
+    I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                LIS3DH_STATUS_REG_ADDRESS,
+                                &Status_Reg);
     
-    ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
-                                                   LIS3DH_CTRL_REG1_ADDRESS,
-                                                   CurrentFreq);
-    
-    if(error == ERROR) UART_Debug_PutString("Error in update memory\r\n");
-}    
+    // Data Acquisition, Conversion and Buffer creation only if new data are available
+    if(Status_Reg & LIS3DH_STATUS_REG_NEW_DATA_SET)
+    {
+        BufferFiller(DataConversion(DataFromAccelerometer()));      
+        // a. raw data from accelerometer   [see code below]
+        // b. data conversion               [see code below]
+        // c. buffer preparation            [see code below]
+    }    
+}
 /*------------------------------------------------------------------------------------------*/
 // Frequency option
+// [PASS 1 in MicroManager function]
 
 void FreqOption()
 {
     if(ButtonPressed)
     {
-        if(ButtonCounter >= 0b0111 | ButtonCounter == 0b0001)
+        ButtonPressed = 0;
+        
+        switch(CurrentFreq)
         {
-            ButtonCounter = 0b0001;
-            UpdateMemory();
-            UART_Debug_PutString("Sampling Frequency = 1Hz");
-            ButtonPressed = 0;
-        }
-        else 
-        {
-            switch(ButtonCounter)
-            {
-                case (0b0010):
-                        UpdateMemory();
-                        UART_Debug_PutString("Sampling Frequency = 10Hz");
-                        ButtonPressed = 0;
-                        break;
-                case (0b0011):
-                        UpdateMemory();
-                        UART_Debug_PutString("Sampling Frequency = 25Hz");
-                        ButtonPressed = 0;
-                        break;
-                case (0b0100):
-                        UpdateMemory();
-                        UART_Debug_PutString("Sampling Frequency = 50Hz");
-                        ButtonPressed = 0;
-                        break;
-                case (0b0101):
-                        UpdateMemory();
-                        UART_Debug_PutString("Sampling Frequency = 100Hz");
-                        ButtonPressed = 0;
-                        break;
-                case (0b0110):
-                        UpdateMemory();
-                        UART_Debug_PutString("Sampling Frequency = 200Hz");
-                        ButtonPressed = 0;
-                        break;
-                default:
-                        break;
-            }
+            case (1):
+                    UpdateMemory(); // [**] see below
+                    UART_Debug_PutString("Sampling Frequency = 1Hz\r\n");
+            case (2):
+                    UpdateMemory();
+                    UART_Debug_PutString("Sampling Frequency = 10Hz\r\n");
+                    break;
+            case (3):
+                    UpdateMemory();
+                    UART_Debug_PutString("Sampling Frequency = 25Hz\r\n");
+                    break;
+            case (4):
+                    UpdateMemory();
+                    UART_Debug_PutString("Sampling Frequency = 50Hz\r\n");
+                    break;
+            case (5):
+                    UpdateMemory();
+                    UART_Debug_PutString("Sampling Frequency = 100Hz\r\n");
+                    break;
+            case (6):
+                    UpdateMemory();
+                    UART_Debug_PutString("Sampling Frequency = 200Hz\r\n");
+                    break;
+            default:
+                    break;
         }
     }
+    
 }
 /*------------------------------------------------------------------------------------------*/
+// Record frequency in EEPROM
+// [**]     
+
+void UpdateMemory()
+{
+    EEPROM_UpdateTemperature();
+    EEPROM_WriteByte(CurrentFreq, EEPROM_ADDRESS);
+    
+    ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                                   LIS3DH_CTRL_REG1_ADDRESS,
+                                                   LIS3DH_CTRL_REG1_INIT | (CurrentFreq<<4));
+    
+    if(error == ERROR) UART_Debug_PutString("Error in update memory\r\n");
+}    
+/*------------------------------------------------------------------------------------------*/
 // Data collection from LIS3DH
+// [PASS 2 in MicroManager function]
 
 XYZData DataFromAccelerometer()
 {
@@ -125,28 +152,30 @@ XYZData DataFromAccelerometer()
     
     if(error == ERROR) UART_Debug_PutString("Error data acquisition\r\n");
     
-    raw_data.X = (int16)(MultiReadData[0] |(MultiReadData[1])<<8)>>4; 
-    raw_data.Y = (int16)(MultiReadData[2] |(MultiReadData[3])<<8)>>4;
-    raw_data.Z = (int16)(MultiReadData[4] |(MultiReadData[5])<<8)>>4;
+    raw_data.X = (int16)((MultiReadData[0] |(MultiReadData[1]<<8))>>4); 
+    raw_data.Y = (int16)((MultiReadData[2] |(MultiReadData[3]<<8))>>4);
+    raw_data.Z = (int16)((MultiReadData[4] |(MultiReadData[5]<<8))>>4);
     
     return(raw_data);
 }    
 /*------------------------------------------------------------------------------------------*/
 // Data preparation from raw data
+// [PASS 3 in MicroManager function]
 
 XYZData DataConversion(XYZData raw_data)
 {   
     XYZData conv_data;
 
     // 1000 is the multipling factor to save 3 digits after the comma
-    conv_data.X = 1000*(raw_data.X*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
-    conv_data.Y = 1000*(raw_data.Y*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
-    conv_data.Z = 1000*(raw_data.Z*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+    conv_data.X = (int16)(1000*(raw_data.X*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
+    conv_data.Y = (int16)(1000*(raw_data.Y*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
+    conv_data.Z = (int16)(1000*(raw_data.Z*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
     
     return(conv_data);
 }    
 /*------------------------------------------------------------------------------------------*/
 // Data preparation from raw data
+// [PASS 4 in MicroManager function]
 
 void BufferFiller (XYZData conv_data)
 {
@@ -154,39 +183,14 @@ void BufferFiller (XYZData conv_data)
     
     DataBuffer[0] = HEADER;
     DataBuffer[1] = (uint8_t)(conv_data.X & 0xFF);
-    DataBuffer[2] = (uint8_t)(conv_data.X >> 8) & 0xFF;
+    DataBuffer[2] = (uint8_t)((conv_data.X >> 8) & 0xFF);
     DataBuffer[1] = (uint8_t)(conv_data.Y & 0xFF);
-    DataBuffer[2] = (uint8_t)(conv_data.Y >> 8) & 0xFF;
+    DataBuffer[2] = (uint8_t)((conv_data.Y >> 8) & 0xFF);
     DataBuffer[1] = (uint8_t)(conv_data.Z & 0xFF);
-    DataBuffer[2] = (uint8_t)(conv_data.Z >> 8) & 0xFF;
+    DataBuffer[2] = (uint8_t)((conv_data.Z >> 8) & 0xFF);
     DataBuffer[BUFFER_SIZE-1] = TAIL;
     
     UART_Debug_PutArray(DataBuffer, BUFFER_SIZE);
 }
-/*------------------------------------------------------------------------------------------*/
-// Microcontroller functions (memory management, freq change, data acquisition and preparation)
-
-void MicroManager()
-{   
-    // Frequency control
-    FreqOption();
-    
-    // Variable for read Status Register
-    uint8_t Status_Reg;
-    
-    // Status Register reading
-    I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                LIS3DH_STATUS_REG_ADDRESS,
-                                &Status_Reg);
-    
-    // Data Acquisition, Conversion and Buffer creation only if new data are available
-    if(Status_Reg & LIS3DH_STATUS_REG_NEW_DATA_SET)
-    {
-       BufferFiller(DataConversion(DataFromAccelerometer()));
-    }    
-}
-
-
-
 
 /* [] END OF FILE */

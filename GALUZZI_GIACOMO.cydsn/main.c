@@ -9,9 +9,8 @@
 
 int main(void)
 {
-    CyGlobalIntEnable;      // Enable global interrupts
+    CyGlobalIntEnable;      // Enable global interrupts 
     InitAll();              // Initialization of UART, EEPROM, I2C PERIPH., ISR and LIS3DH
-
     
     for(;;)
     {

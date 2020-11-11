@@ -63,6 +63,13 @@
     /* VARIABLES */
     /*------------------------------------------------------------------------------------------*/
     
+    // Variables for isr
+    extern uint8_t      ButtonCounter;                  // Counter to change frequency
+    
+    // Variables for error check
+    extern char message[50];                          // Message for debugging purpose
+    extern uint8_t isConnected;                                // Variable to check if the device is connected 
+    
     // Variables for register configuration
     extern _Bool        ButtonPressed;                  // Flag for the interrupt
     extern uint8_t      CurrentFreq;                    // Working frequency of accelerometer
