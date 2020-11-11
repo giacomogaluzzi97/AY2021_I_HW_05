@@ -10,10 +10,6 @@
 // Variables for register configuration
 uint8_t CurrentFreq = (LIS3DH_CTRL_REG1_INIT | 0b00010000);    // The first frequency is 1 Hz
 
-// Variables for data buffer
-uint8_t DataBuffer[BUFFER_SIZE];
-    
-
 
 /*------------------------------------------------------------------------------------------*/
 // Initialisation function
@@ -117,10 +113,10 @@ void FreqOption()
 /*------------------------------------------------------------------------------------------*/
 // Data collection from LIS3DH
 
-XYZ_RawData DataFromAccelerometer()
+XYZData DataFromAccelerometer()
 {
     uint8_t MultiReadData[NUMBER_OF_DATA_REG];      // Vector for multi read
-    XYZ_RawData raw_data;                           // Structure for data casting
+    XYZData raw_data;                               // Structure for data casting
     
     ErrorCode error = I2C_Peripheral_ReadRegisterMulti(LIS3DH_DEVICE_ADDRESS,
                                                        LIS3DH_OUT_X_L,
@@ -129,26 +125,44 @@ XYZ_RawData DataFromAccelerometer()
     
     if(error == ERROR) UART_Debug_PutString("Error data acquisition\r\n");
     
-    raw_data.X = (int16)((MultiReadData[1])<<8 | MultiReadData[0])>>4; 
-    raw_data.Y = (int16)((MultiReadData[3])<<8 | MultiReadData[2])>>4;
-    raw_data.Z = (int16)((MultiReadData[5])<<8 | MultiReadData[4])>>4;
+    raw_data.X = (int16)(MultiReadData[0] |(MultiReadData[1])<<8)>>4; 
+    raw_data.Y = (int16)(MultiReadData[2] |(MultiReadData[3])<<8)>>4;
+    raw_data.Z = (int16)(MultiReadData[4] |(MultiReadData[5])<<8)>>4;
     
     return(raw_data);
 }    
 /*------------------------------------------------------------------------------------------*/
 // Data preparation from raw data
 
-XYZ_ConvData DataConversion(XYZ_RawData raw_data)
+XYZData DataConversion(XYZData raw_data)
 {   
-    XYZ_ConvData conv_data;
+    XYZData conv_data;
+
+    // 1000 is the multipling factor to save 3 digits after the comma
+    conv_data.X = 1000*(raw_data.X*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+    conv_data.Y = 1000*(raw_data.Y*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+    conv_data.Z = 1000*(raw_data.Z*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
     
-    conv_data.X = (float32)(raw_data.X*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
-    conv_data.Y = (float32)(raw_data.Y*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
-    conv_data.Z = (float32)(raw_data.Z*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY);
+    return(conv_data);
 }    
+/*------------------------------------------------------------------------------------------*/
+// Data preparation from raw data
 
-
-
+void BufferFiller (XYZData conv_data)
+{
+    uint8_t DataBuffer[BUFFER_SIZE];
+    
+    DataBuffer[0] = HEADER;
+    DataBuffer[1] = (uint8_t)(conv_data.X & 0xFF);
+    DataBuffer[2] = (uint8_t)(conv_data.X >> 8) & 0xFF;
+    DataBuffer[1] = (uint8_t)(conv_data.Y & 0xFF);
+    DataBuffer[2] = (uint8_t)(conv_data.Y >> 8) & 0xFF;
+    DataBuffer[1] = (uint8_t)(conv_data.Z & 0xFF);
+    DataBuffer[2] = (uint8_t)(conv_data.Z >> 8) & 0xFF;
+    DataBuffer[BUFFER_SIZE-1] = TAIL;
+    
+    UART_Debug_PutArray(DataBuffer, BUFFER_SIZE);
+}
 
 
 

@@ -53,7 +53,11 @@
     // Buffer data
     #define HEADER                          0xA0
     #define TAIL                            0xC0
-    #define BUFFER_SIZE                     1+LIS3DH_HIGH_RESOLUTION+1
+    #define AXIS_NUMBER                     3
+    #define BYTE_PER_AXIS                   2           // Each variable is an int16
+    
+    #define BUFFER_SIZE                     1+AXIS_NUMBER*BYTE_PER_AXIS+1
+    
     
     /*------------------------------------------------------------------------------------------*/
     /* VARIABLES */
@@ -62,27 +66,18 @@
     // Variables for register configuration
     extern _Bool        ButtonPressed;                  // Flag for the interrupt
     extern uint8_t      CurrentFreq;                    // Working frequency of accelerometer
-    extern uint8_t      DataBuffer;                     // Data Buffer for send the data
     
     // Variables for data acquisition
     typedef struct {
         int16_t X;
         int16_t Y;
         int16_t Z;
-    } XYZ_RawData;                                      // Typedef for each axis of Raw Data
-    extern XYZ_RawData raw_data;                        // Structure used in Accelerometer_Driver.c
-    
-    typedef struct {
-        float32 X;
-        float32 Y;
-        float32 Z;
-    } XYZ_ConvData;                                     // Typedef for each axis of Converted Data
-    extern XYZ_ConvData conv_data;                      // Structure used in Accelerometer_Driver.c
-    
+    } XYZData;                                          // Typedef for each axis
+    extern XYZData raw_data;                            // Structure used in Accelerometer_Driver.c for raw data
+    extern XYZData conv_data;                           // Structure used in Accelerometer_Driver.c for converted data
     
     // Variables for data buffer
     extern uint8_t DataBuffer[BUFFER_SIZE];
-    
     
     
 #endif

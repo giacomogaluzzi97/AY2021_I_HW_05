@@ -10,20 +10,23 @@
     // Initialisation function
     void InitAll();
     
-    // Accelerometer configuration
+    // Accelerometer configuration function
     void LIS3DH_InitRegister();
     
-    // Record frequency in EEPROM
+    // Record frequency in EEPROM function
     void UpdateMemory ();
     
-    // Frequency option
+    // Frequency option function
     void FreqOption();
     
-    // Data collection from LIS3DH
-    XYZ_RawData DataFromAccelerometer();          
+    // Data collection from LIS3DH function
+    XYZData DataFromAccelerometer();          
     
-    // Data preparation from raw data
-    XYZ_ConvData DataConversion(XYZ_RawData raw_data);
+    // Data preparation from raw data function
+    XYZData DataConversion(XYZData raw_data);
+    
+    // Buffer filling function
+    void BufferFiller (XYZData conv_data);
     
 #endif    
 
