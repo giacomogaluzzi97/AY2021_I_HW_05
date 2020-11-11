@@ -15,7 +15,7 @@ int main(void)
     
     for(;;)
     {
-        
+        MicroManager();     // Microcontroller working (see in Accelerometer_Driver.c)
     }
 }
 

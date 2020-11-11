@@ -163,7 +163,28 @@ void BufferFiller (XYZData conv_data)
     
     UART_Debug_PutArray(DataBuffer, BUFFER_SIZE);
 }
+/*------------------------------------------------------------------------------------------*/
+// Microcontroller functions (memory management, freq change, data acquisition and preparation)
 
+void MicroManager()
+{   
+    // Frequency control
+    FreqOption();
+    
+    // Variable for read Status Register
+    uint8_t Status_Reg;
+    
+    // Status Register reading
+    I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                LIS3DH_STATUS_REG_ADDRESS,
+                                &Status_Reg);
+    
+    // Data Acquisition, Conversion and Buffer creation only if new data are available
+    if(Status_Reg & LIS3DH_STATUS_REG_NEW_DATA_SET)
+    {
+       BufferFiller(DataConversion(DataFromAccelerometer()));
+    }    
+}
 
 
 

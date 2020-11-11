@@ -66,6 +66,7 @@
     // Variables for register configuration
     extern _Bool        ButtonPressed;                  // Flag for the interrupt
     extern uint8_t      CurrentFreq;                    // Working frequency of accelerometer
+    extern uint8_t      Status_Reg;                     // Variable for read Status Register 
     
     // Variables for data acquisition
     typedef struct {
@@ -77,9 +78,8 @@
     extern XYZData conv_data;                           // Structure used in Accelerometer_Driver.c for converted data
     
     // Variables for data buffer
-    extern uint8_t DataBuffer[BUFFER_SIZE];
-    
-    
+    extern uint8_t DataBuffer[BUFFER_SIZE];             // Buffer for data encapsulation
+
 #endif
 
 /* [] END OF FILE */

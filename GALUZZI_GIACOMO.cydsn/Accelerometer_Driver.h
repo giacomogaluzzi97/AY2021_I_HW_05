@@ -28,6 +28,9 @@
     // Buffer filling function
     void BufferFiller (XYZData conv_data);
     
+    // Microcontroller functions (memory management, freq change, data acquisition and preparation)
+    void MicroManager();
+    
 #endif    
 
 /* [] END OF FILE */
