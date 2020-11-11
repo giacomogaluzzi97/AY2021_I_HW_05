@@ -13,16 +13,13 @@
     // Accelerometer configuration function
     void LIS3DH_InitRegister();
     
-    // Microcontroller functions (memory management, freq change, data acquisition and preparation)
-    void MicroManager();
+    // Record frequency in EEPROM function
+    void UpdateMemory ();
     
     // Frequency option function
     void FreqOption();
     
-    // Record frequency in EEPROM function
-    void UpdateMemory ();
-    
-    // Data collection from LIS3DH function
+     // Data collection from LIS3DH function
     XYZData DataFromAccelerometer();          
     
     // Data preparation from raw data function
@@ -30,6 +27,9 @@
     
     // Buffer filling function
     void BufferFiller (XYZData conv_data);
+    
+    // Microcontroller functions (memory management, freq change, data acquisition and preparation)
+    void MicroManager();
     
     
     /*----------------------------------------------------
