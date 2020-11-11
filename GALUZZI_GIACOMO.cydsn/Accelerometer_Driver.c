@@ -80,39 +80,34 @@ void FreqOption()
     if(ButtonPressed)
     {
         ButtonPressed = 0;
-        
-        switch(CurrentFreq)
-        {
-            case(1):
-                    UpdateMemory(); // [**] see above
-                    UART_Debug_PutString("Sampling Frequency = 1Hz\r\n");
-                    break;
-            case(2):
-                    UpdateMemory();
-                    UART_Debug_PutString("Sampling Frequency = 10Hz\r\n");
-                    break;
-            case(3):
-                    UpdateMemory();
-                    UART_Debug_PutString("Sampling Frequency = 25Hz\r\n");
-                    break;
-            case(4):
-                    UpdateMemory();
-                    UART_Debug_PutString("Sampling Frequency = 50Hz\r\n");
-                    break;
-            case(5):
-                    UpdateMemory();
-                    UART_Debug_PutString("Sampling Frequency = 100Hz\r\n");
-                    break;
-            case(6):
-                    UpdateMemory();
-                    UART_Debug_PutString("Sampling Frequency = 200Hz\r\n");
-                    break;
-            default:
-                    break;
-        }
+        UpdateMemory(); // [**] see above
+        // FOR DEBUGGING ONLY: add here the switch below
     }
-    
 }  
+
+//      switch(CurrentFreq)
+//      {
+//            case(1):
+//                    UART_Debug_PutString("Sampling Frequency = 1Hz\r\n");
+//                    break;
+//            case(2):
+//                    UART_Debug_PutString("Sampling Frequency = 10Hz\r\n");
+//                    break;
+//            case(3):
+//                    UART_Debug_PutString("Sampling Frequency = 25Hz\r\n");
+//                    break;
+//            case(4):
+//                    UART_Debug_PutString("Sampling Frequency = 50Hz\r\n");
+//                    break;
+//            case(5):
+//                    UART_Debug_PutString("Sampling Frequency = 100Hz\r\n");
+//                    break;
+//            case(6):
+//                    UART_Debug_PutString("Sampling Frequency = 200Hz\r\n");
+//                    break;
+//            default:
+//                    break;
+//      }
 /*------------------------------------------------------------------------------------------*/
 // Data collection from LIS3DH
 // [PASS 2 in MicroManager function (at the end of this file)]
