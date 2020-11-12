@@ -29,7 +29,6 @@
     #define LIS3DH_OUT_Y_H                  0x2B        // Address of the higher output of  Y coordinate
     #define LIS3DH_OUT_Z_L                  0x2C        // Address of the lower  output of  Z coordinate
     #define LIS3DH_OUT_Z_H                  0x2D        // Address of the higher output of  Z coordinate
-    #define LIS3DH_OUT_X_L                  0x28        // Address of the lower  output of  Z coordinate
     #define NUMBER_OF_DATA_REG              6           // Useful for multi read
     
     // Accelerometer register init
