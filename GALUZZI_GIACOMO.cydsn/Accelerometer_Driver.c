@@ -8,9 +8,6 @@
 #include "UART_Debug.h"
 
 
-// Variables for register configuration
-uint8_t CurrentFreq;                                    // Sampling frequency variable
-
 // Variable to use if debugging with UART
     //char message[50] = {'\0'};                        // Message for debugging purpose
     //uint8_t isConnected;                              // Variable to check if the device is connected 
@@ -42,19 +39,15 @@ void LIS3DH_InitRegister()
         // UART_Debug_PutString(message);
     
     // Initialisation of CTRL_REG1
-    ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
-                                                   LIS3DH_CTRL_REG1_ADDRESS,
-                                                   LIS3DH_CTRL_REG1_INIT | (CurrentFreq<<4));
+    I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                 LIS3DH_CTRL_REG1_ADDRESS,
+                                 LIS3DH_CTRL_REG1_INIT | (CurrentFreq<<4));
     
-    if(error == ERROR) UART_Debug_PutString("Error in LIS3DH CTRL REG 1 configuration\r\n");
     
     // Initialisation of CTRL_REG4
-    error = I2C_Peripheral_WriteRegister          (LIS3DH_DEVICE_ADDRESS,
-                                                   LIS3DH_CTRL_REG4_ADDRESS,
-                                                   LIS3DH_CTRL_REG4_INIT);
-    
-    if(error == ERROR) UART_Debug_PutString("Error in LIS3DH CTRL REG 4 configuration\r\n");
-    
+    I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                 LIS3DH_CTRL_REG4_ADDRESS,
+                                 LIS3DH_CTRL_REG4_INIT);
 }   
 /*------------------------------------------------------------------------------------------*/
 // Record frequency in EEPROM
@@ -65,11 +58,9 @@ void UpdateMemory()
     EEPROM_UpdateTemperature();
     EEPROM_WriteByte(CurrentFreq, EEPROM_ADDRESS);
     
-    ErrorCode error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
-                                                   LIS3DH_CTRL_REG1_ADDRESS,
-                                                   LIS3DH_CTRL_REG1_INIT | (CurrentFreq<<4));
-    
-    if(error == ERROR) UART_Debug_PutString("Error in update memory\r\n");
+    I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                 LIS3DH_CTRL_REG1_ADDRESS,
+                                 LIS3DH_CTRL_REG1_INIT | (CurrentFreq<<4));    
 }  
 /*------------------------------------------------------------------------------------------*/
 // Frequency option
@@ -112,54 +103,43 @@ void FreqOption()
 // Data collection from LIS3DH
 // [PASS 2 in MicroManager function (at the end of this file)]
 
-XYZData DataFromAccelerometer()
+void DataFromAccelerometer(void)
 {
     uint8_t MultiReadData[NUMBER_OF_DATA_REG];      // Vector for multi read
-    XYZData raw_data;                               // Structure for data casting
     
-    ErrorCode error = I2C_Peripheral_ReadRegisterMulti(LIS3DH_DEVICE_ADDRESS,
-                                                       LIS3DH_OUT_X_L,
-                                                       NUMBER_OF_DATA_REG,
-                                                       MultiReadData);
+    I2C_Peripheral_ReadRegisterMulti(LIS3DH_DEVICE_ADDRESS,
+                                     LIS3DH_OUT_X_L,
+                                     NUMBER_OF_DATA_REG,
+                                     MultiReadData);
     
-    if(error == ERROR) UART_Debug_PutString("Error data acquisition\r\n");
-    
-    raw_data.X = (int16)(((MultiReadData[0])|(MultiReadData[1]<<8))>>4); 
-    raw_data.Y = (int16)(((MultiReadData[2])|(MultiReadData[3]<<8))>>4);
-    raw_data.Z = (int16)(((MultiReadData[4])|(MultiReadData[5]<<8))>>4);
-    
-    return(raw_data);
+    raw_data[0] = (int16)(MultiReadData[0] |(MultiReadData[1]<<8))>>4; 
+    raw_data[1] = (int16)(MultiReadData[2] |(MultiReadData[3]<<8))>>4;
+    raw_data[2] = (int16)(MultiReadData[4] |(MultiReadData[5]<<8))>>4; 
 }    
 /*------------------------------------------------------------------------------------------*/
 // Data preparation from raw data
 // [PASS 3 in MicroManager function (at the end of this file)]
 
-XYZData DataConversion(XYZData raw_data)
+void DataConversion(void)
 {   
-    XYZData conv_data;
-
     // 1000 is the multipling factor to save 3 digits after the comma
-    conv_data.X = (int16)(1000*(raw_data.X*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
-    conv_data.Y = (int16)(1000*(raw_data.Y*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
-    conv_data.Z = (int16)(1000*(raw_data.Z*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
-    
-    return(conv_data);
+    conv_data[0] = (int16)(1000*(raw_data[0]*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
+    conv_data[1] = (int16)(1000*(raw_data[1]*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
+    conv_data[2] = (int16)(1000*(raw_data[2]*MG_TO_G*LIS3DH_SENSITIVITY*GRAVITY));
 }    
 /*------------------------------------------------------------------------------------------*/
 // Data preparation from raw data
 // [PASS 4 in MicroManager function (at the end of this file)]
 
-void BufferFiller (XYZData conv_data)
+void BufferFiller (void)
 {
-    uint8_t DataBuffer[BUFFER_SIZE];
-    
     DataBuffer[0] = HEADER;
-    DataBuffer[1] = (uint8_t)(conv_data.X & 0xFF);
-    DataBuffer[2] = (uint8_t)(conv_data.X >> 8);
-    DataBuffer[1] = (uint8_t)(conv_data.Y & 0xFF);
-    DataBuffer[2] = (uint8_t)(conv_data.Y >> 8);
-    DataBuffer[1] = (uint8_t)(conv_data.Z & 0xFF);
-    DataBuffer[2] = (uint8_t)(conv_data.Z >> 8);
+    DataBuffer[1] = (uint8_t)(conv_data[0] & 0xFF);
+    DataBuffer[2] = (uint8_t)((conv_data[0] >> 8) & 0xFF);
+    DataBuffer[3] = (uint8_t)(conv_data[1] & 0xFF);
+    DataBuffer[4] = (uint8_t)((conv_data[1] >> 8) & 0xFF);
+    DataBuffer[5] = (uint8_t)(conv_data[2] & 0xFF);
+    DataBuffer[6] = (uint8_t)((conv_data[2] >> 8) & 0xFF);
     DataBuffer[BUFFER_SIZE-1] = TAIL;
     
     UART_Debug_PutArray(DataBuffer, BUFFER_SIZE);
@@ -182,7 +162,9 @@ void MicroManager()
     // Data Acquisition, Conversion and Buffer creation only if new data are available
     if(Status_Reg & LIS3DH_STATUS_REG_NEW_DATA_SET)
     {
-        BufferFiller(DataConversion(DataFromAccelerometer()));      
+        DataFromAccelerometer();
+        DataConversion();
+        BufferFiller();      
         // a. raw data from accelerometer   [see code above]
         // b. data conversion               [see code above]
         // c. buffer preparation            [see code above]

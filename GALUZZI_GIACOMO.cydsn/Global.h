@@ -28,7 +28,7 @@
     #define LIS3DH_OUT_Y_L                  0x2A        // Address of the lower  output of  Y coordinate
     #define LIS3DH_OUT_Y_H                  0x2B        // Address of the higher output of  Y coordinate
     #define LIS3DH_OUT_Z_L                  0x2C        // Address of the lower  output of  Z coordinate
-    #define LIS3DH_OUT_Z_H                  0x2D        // Address of the higher output of  Z coordinate
+    #define LIS3DH_OUT_Z_H                  0x2D        // Address of the higher output of  Z coordinate 
     #define NUMBER_OF_DATA_REG              6           // Useful for multi read
     
     // Accelerometer register init
@@ -62,26 +62,12 @@
     /* VARIABLES */
     /*------------------------------------------------------------------------------------------*/
     
-    // Variables for error check
-        //extern char message[50];                      // Message for debugging purpose
-        //extern uint8_t isConnected;                   // Variable to check if the device is connected 
-    
-    // Variables for register configuration
-    extern _Bool        ButtonPressed;                  // Flag for the interrupt
-    extern uint8_t      CurrentFreq;                    // Working frequency of accelerometer
-    extern uint8_t      Status_Reg;                     // Variable for read Status Register 
-    
     // Variables for data acquisition
-    typedef struct {
-        int16_t X;
-        int16_t Y;
-        int16_t Z;
-    } XYZData;                                          // Typedef for each axis
-    extern XYZData raw_data;                            // Structure used in Accelerometer_Driver.c for raw data
-    extern XYZData conv_data;                           // Structure used in Accelerometer_Driver.c for converted data
+    int16 raw_data[3];                                  // Structure used in Accelerometer_Driver.c for raw data
+    int16 conv_data[3];                                 // Structure used in Accelerometer_Driver.c for converted data
     
     // Variables for data buffer
-    extern uint8_t DataBuffer[BUFFER_SIZE];             // Buffer for data encapsulation
+    uint8_t DataBuffer[BUFFER_SIZE];                    // Buffer for data encapsulation
 
 #endif
 

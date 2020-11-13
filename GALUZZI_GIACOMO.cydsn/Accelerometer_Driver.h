@@ -20,13 +20,13 @@
     void FreqOption();
     
      // Data collection from LIS3DH function
-    XYZData DataFromAccelerometer();          
+    void DataFromAccelerometer();          
     
     // Data preparation from raw data function
-    XYZData DataConversion(XYZData raw_data);
+    void DataConversion(void);
     
     // Buffer filling function
-    void BufferFiller (XYZData conv_data);
+    void BufferFiller (void);
     
     // Microcontroller functions (memory management, freq change, data acquisition and preparation)
     void MicroManager();
