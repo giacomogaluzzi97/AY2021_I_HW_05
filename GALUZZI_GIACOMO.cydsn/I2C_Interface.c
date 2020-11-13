@@ -197,7 +197,5 @@
         }
         return DEVICE_UNCONNECTED;
     }
-
-
     
 /* [] END OF FILE */
